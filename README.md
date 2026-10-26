@@ -2,7 +2,15 @@
 
 Public demo of the hackathon retention dashboard. Bundled data is **20,000 mock scored policies**, not live member records.
 
-Open the app: after Streamlit Community Cloud is connected, the URL is on the app page.
+Code and data: https://github.com/yscc272-dotcom/hbf-retention-dashboard
+
+## Deploy the live site (Streamlit Community Cloud)
+
+1. Open https://share.streamlit.io/ and sign in with GitHub (`yscc272-dotcom`).
+2. Create app → Yup, I have an app → Paste GitHub URL:
+   `https://github.com/yscc272-dotcom/hbf-retention-dashboard/blob/main/09_dashboard_presentation.py`
+3. Optional custom subdomain: `hbf-retention`
+4. Deploy. The public URL will look like `https://hbf-retention.streamlit.app`
 
 ## Run locally
 
