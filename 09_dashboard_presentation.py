@@ -202,29 +202,11 @@ def decide_actions(probs, monthly_premium, uplift, min_ev, value_horizon_months)
 # ============================================================
 st.title("HBF Policy Cancellation Early-Warning Dashboard")
 st.caption(
-    "Reads a teammate's already-scored policies (4 cancellation-type probabilities per "
-    "policy) and turns them into a recommended action and its expected net value."
+    "Opens with 20,000 mock scored policies already loaded. Four cancellation-type "
+    "probabilities per policy become a recommended action and its expected net value."
 )
 
-st.sidebar.header("Data source")
-st.sidebar.caption("Opens with the built-in demo Excel (20,000 mock policies). Upload only if you want to replace it.")
-uploaded_file = st.sidebar.file_uploader(
-    "Replace with your own file (optional)",
-    type=["xlsx", "xls", "csv"],
-    help=(
-        "Must contain: POLICY_HASH, MONTHLY_PREMIUM, p_Switcher, p_System Lapsed, "
-        "p_Leave PHI, p_Non-Recoverable. Nothing you upload here is saved anywhere "
-        "beyond this browser session."
-    ),
-)
-if os.path.isfile(DEFAULT_DATA_PATH):
-    with open(DEFAULT_DATA_PATH, "rb") as demo_xlsx:
-        st.sidebar.download_button(
-            "Download demo Excel",
-            demo_xlsx,
-            file_name="mock_scored_policies_20000.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+st.sidebar.caption("Demo Excel is already loaded (20,000 mock policies). No upload needed.")
 st.sidebar.divider()
 
 st.sidebar.header("Success-rate assumptions")
@@ -293,15 +275,12 @@ min_primary_risk_sidebar = st.sidebar.slider(
     ),
 )
 
-if uploaded_file is not None:
-    file_bytes, data_name = uploaded_file.getvalue(), uploaded_file.name
-elif os.path.isfile(DEFAULT_DATA_PATH):
-    with open(DEFAULT_DATA_PATH, "rb") as built_in:
-        file_bytes = built_in.read()
-    data_name = os.path.basename(DEFAULT_DATA_PATH)
-else:
-    st.info("Built-in demo Excel is missing. Upload a scored Excel or CSV to get started.")
+if not os.path.isfile(DEFAULT_DATA_PATH):
+    st.error("Built-in demo Excel is missing from the app.")
     st.stop()
+with open(DEFAULT_DATA_PATH, "rb") as built_in:
+    file_bytes = built_in.read()
+data_name = os.path.basename(DEFAULT_DATA_PATH)
 
 try:
     latest = load_scores(file_bytes, data_name)
