@@ -21,4 +21,4 @@ pip install -r requirements.txt
 streamlit run 09_dashboard_presentation.py
 ```
 
-Required CSV columns: `POLICY_HASH`, `MONTHLY_PREMIUM`, `p_Switcher`, `p_System Lapsed`, `p_Leave PHI`, `p_Non-Recoverable`.
+The app opens with `mock_scored_policies_20000.xlsx` already loaded. Required columns: `POLICY_HASH`, `MONTHLY_PREMIUM`, `p_Switcher`, `p_System Lapsed`, `p_Leave PHI`, `p_Non-Recoverable`.

@@ -33,6 +33,8 @@ right file name into the "Scored CSV path" box in the sidebar once the app is op
 """
 
 import os
+from io import BytesIO
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -44,7 +46,7 @@ st.set_page_config(page_title="HBF Policy Cancellation Early-Warning Dashboard",
 # straight into the sidebar once the app is running.
 # ============================================================
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CSV_PATH = os.path.join(HERE, "mock_scored_policies_20000.csv")
+DEFAULT_DATA_PATH = os.path.join(HERE, "mock_scored_policies_20000.xlsx")
 
 # ============ Business constants (from the official HBF challenge pack) ============
 CANCEL_TYPES = ["Switcher", "System Lapsed", "Leave PHI", "Non-Recoverable"]
@@ -109,14 +111,20 @@ GRIDLINE = "#e1e0d9"
 SURFACE = "#fcfcfb"
 
 
+def _read_table(source, name=""):
+    label = (name or getattr(source, "name", str(source))).lower()
+    if label.endswith((".xlsx", ".xls")):
+        return pd.read_excel(source)
+    return pd.read_csv(source)
+
+
 @st.cache_data(show_spinner="Loading scored policies...")
-def load_scores(csv_source):
-    """csv_source can be a local file path (str) or an uploaded file object
-    (what st.file_uploader returns) — pandas reads either the same way."""
-    df = pd.read_csv(csv_source)
+def load_scores(file_bytes, name=""):
+    """Excel or CSV. Cached from raw bytes so the public app always opens with data."""
+    df = _read_table(BytesIO(file_bytes), name)
     missing = [c for c in REQUIRED_COLS if c not in df.columns]
     if missing:
-        raise ValueError(f"CSV is missing required column(s): {missing}")
+        raise ValueError(f"File is missing required column(s): {missing}")
     return df
 
 
@@ -199,15 +207,24 @@ st.caption(
 )
 
 st.sidebar.header("Data source")
+st.sidebar.caption("Opens with the built-in demo Excel (20,000 mock policies). Upload only if you want to replace it.")
 uploaded_file = st.sidebar.file_uploader(
-    "Upload your scored CSV",
-    type=["csv"],
+    "Replace with your own file (optional)",
+    type=["xlsx", "xls", "csv"],
     help=(
         "Must contain: POLICY_HASH, MONTHLY_PREMIUM, p_Switcher, p_System Lapsed, "
         "p_Leave PHI, p_Non-Recoverable. Nothing you upload here is saved anywhere "
         "beyond this browser session."
     ),
 )
+if os.path.isfile(DEFAULT_DATA_PATH):
+    with open(DEFAULT_DATA_PATH, "rb") as demo_xlsx:
+        st.sidebar.download_button(
+            "Download demo Excel",
+            demo_xlsx,
+            file_name="mock_scored_policies_20000.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
 st.sidebar.divider()
 
 st.sidebar.header("Success-rate assumptions")
@@ -276,19 +293,23 @@ min_primary_risk_sidebar = st.sidebar.slider(
     ),
 )
 
-csv_source = uploaded_file if uploaded_file is not None else DEFAULT_CSV_PATH
-
-if uploaded_file is None and not os.path.isfile(DEFAULT_CSV_PATH):
-    st.info("Upload a scored CSV using the sidebar to get started.")
+if uploaded_file is not None:
+    file_bytes, data_name = uploaded_file.getvalue(), uploaded_file.name
+elif os.path.isfile(DEFAULT_DATA_PATH):
+    with open(DEFAULT_DATA_PATH, "rb") as built_in:
+        file_bytes = built_in.read()
+    data_name = os.path.basename(DEFAULT_DATA_PATH)
+else:
+    st.info("Built-in demo Excel is missing. Upload a scored Excel or CSV to get started.")
     st.stop()
 
 try:
-    latest = load_scores(csv_source)
+    latest = load_scores(file_bytes, data_name)
 except ValueError as e:
     st.error(str(e))
     st.stop()
 except Exception as e:
-    st.error(f"Couldn't read that CSV: {e}")
+    st.error(f"Couldn't read that file: {e}")
     st.stop()
 
 # ============ Core calculation: probabilities -> recommended action -> expected value ============
