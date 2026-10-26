@@ -206,7 +206,21 @@ st.caption(
     "probabilities per policy become a recommended action and its expected net value."
 )
 
-st.sidebar.caption("Demo Excel is already loaded (20,000 mock policies). No upload needed.")
+st.sidebar.header("Data source")
+st.sidebar.caption("Demo Excel is already loaded (20,000 mock policies). Upload only if you want to test another file.")
+uploaded_file = st.sidebar.file_uploader(
+    "Optional: test another Excel or CSV",
+    type=["xlsx", "xls", "csv"],
+    help=(
+        "Must contain: POLICY_HASH, MONTHLY_PREMIUM, p_Switcher, p_System Lapsed, "
+        "p_Leave PHI, p_Non-Recoverable. Nothing you upload is saved beyond this session."
+    ),
+)
+st.sidebar.caption(
+    f"Currently using: {uploaded_file.name}"
+    if uploaded_file is not None
+    else "Currently using: mock_scored_policies_20000.xlsx"
+)
 st.sidebar.divider()
 
 st.sidebar.header("Success-rate assumptions")
@@ -275,12 +289,15 @@ min_primary_risk_sidebar = st.sidebar.slider(
     ),
 )
 
-if not os.path.isfile(DEFAULT_DATA_PATH):
+if uploaded_file is not None:
+    file_bytes, data_name = uploaded_file.getvalue(), uploaded_file.name
+elif os.path.isfile(DEFAULT_DATA_PATH):
+    with open(DEFAULT_DATA_PATH, "rb") as built_in:
+        file_bytes = built_in.read()
+    data_name = os.path.basename(DEFAULT_DATA_PATH)
+else:
     st.error("Built-in demo Excel is missing from the app.")
     st.stop()
-with open(DEFAULT_DATA_PATH, "rb") as built_in:
-    file_bytes = built_in.read()
-data_name = os.path.basename(DEFAULT_DATA_PATH)
 
 try:
     latest = load_scores(file_bytes, data_name)
